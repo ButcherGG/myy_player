@@ -59,6 +59,8 @@ MYY Player 是一款采用 Rust 编写的跨平台视频播放器原型（MVP）
 | Windows 10/11 | ✅ 已验证 | 推荐 GPU 驱动支持 D3D11VA；通过 `cargo wix` 可生成 MSI 安装包 |
 | macOS 12+    | ✅ 已验证 | 依赖 VideoToolbox；建议使用 `brew` 安装 FFmpeg |
 | Linux (X11/Wayland) | ✅ 已验证 | 首选 VAAPI；需安装 FFmpeg 开发库和编译工具链 |
+| Android / HarmonyOS（核心库） | ⚠️ 实验性 | 可交叉编译核心播放引擎（无 UI），后续迭代将提供原生界面与输入控制 |
+| iOS / iPadOS（核心库） | ⚠️ 实验性 | 支持生成静态库供集成，暂无 egui UI，未来版本将补全移动端渲染层 |
 
 > ⚠️ 若使用硬件解码，请确保目标平台 GPU 与驱动满足要求（NVIDIA/AMD/Intel 均需正确安装）。
 
@@ -126,6 +128,44 @@ cargo build --release
    ```
    生成的 MSI 位于 `target/wix/`。
 
+### HarmonyOS（OpenHarmony）核心库
+> 当前阶段仅支持编译核心播放引擎为静态库/可执行文件，尚无原生 UI。请参考下方步骤交叉编译并集成到鸿蒙应用工程中。
+
+1. **安装 OpenHarmony NDK**（以 4.0.0.74 为例）
+   - 下载地址：https://repo.huaweicloud.com/harmonyos/
+   - 解压到本地，例如 `D:\openharmony\native-sdk`
+2. **配置环境变量**（PowerShell 示例）：
+   ```powershell
+   $env:OHOS_NDK_HOME = "D:\openharmony\native-sdk"
+   $env:PATH += ";$env:OHOS_NDK_HOME\llvm\bin"
+   ```
+3. **安装 Rust 交叉编译目标**：
+   ```powershell
+   rustup target add aarch64-unknown-linux-ohos
+   rustup target add armv7-unknown-linux-ohos   # 如果需要 32 位
+   ```
+4. **生成 `.cargo/config.toml`（建议）**：
+   ```toml
+   [target.aarch64-unknown-linux-ohos]
+   linker = "clang"
+   ar = "llvm-ar"
+   rustflags = [
+       "-Clink-arg=--target=aarch64-unknown-linux-ohos",
+       "-Clink-arg=--sysroot=${OHOS_NDK_HOME}/native/sysroot",
+   ]
+   ```
+5. **构建核心库/二进制**：
+   ```powershell
+   cargo build --release --target aarch64-unknown-linux-ohos
+   ```
+   产物位于 `target/aarch64-unknown-linux-ohos/release/`，可作为鸿蒙 ArkUI/Stage 工程的原生库接入。
+6. **集成建议**：
+   - 将 `libmyy_player.a` 或自定义静态库复制到鸿蒙工程的 `libs` 目录
+   - 通过 NAPI/FFI 暴露播放控制接口
+   - UI 由鸿蒙前端（ArkUI、Stage 或 JS/TS）负责，实现播放按钮、进度条等
+
+> 若需要生成可执行 Demo，可结合鸿蒙模板项目复用播放器核心逻辑；硬件解码支持取决于设备与 OpenHarmony NDK 能力。
+
 ### 其他平台
 - macOS / Linux 可使用 `cargo-bundle`、`appimagetool` 等工具打包；当前阶段建议提供 Release 二进制 + 运行脚本。
 
@@ -139,7 +179,10 @@ cargo build --release
 - [ ] 多音频声道输出与混音
 - [ ] 播放列表与循环模式
 - [ ] 字幕渲染与外挂字幕解析
+- [ ] AV1/AVS3 等新一代编解码支持
+- [ ] 移动端原生界面（Android/HarmonyOS/iOS），完善触控与系统集成
 - [ ] 更多网络协议（SRT、WebRTC）
+- [ ] 云端播放记录与收藏同步
 
 ## 贡献方式
 欢迎提交 Issue / Pull Request！建议在提交之前：
