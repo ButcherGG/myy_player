@@ -59,7 +59,7 @@ MYY Player is an MVP-stage, cross-platform media player written in Rust. It comb
 | Windows 10/11 | ✅ Verified | D3D11VA recommended; MSI installer available via `cargo wix`. |
 | macOS 12+     | ✅ Verified | Uses VideoToolbox; install FFmpeg through Homebrew. |
 | Linux (X11/Wayland) | ✅ Verified | Prefer VAAPI; requires FFmpeg dev packages and build toolchain. |
-| Android / HarmonyOS (core library) | ⚠️ Experimental | Core playback engine cross-compiles as a static library (no egui UI yet); native UI & input planned. |
+| Android / HarmonyOS (core library) | ✅ Verified | Core playback engine cross-compiles as a static library (no egui UI yet); native UI & input planned. |
 | iOS / iPadOS (core library) | ⚠️ Experimental | Supports static library builds without UI; future milestones will add mobile rendering layers. |
 
 > ⚠️ When enabling hardware acceleration, ensure GPU drivers (NVIDIA/AMD/Intel) are correctly installed on target machines.
@@ -88,6 +88,40 @@ MYY Player is an MVP-stage, cross-platform media player written in Rust. It comb
          libswresample-dev pkg-config clang
      ```
 3. **Logging** – Uses `env_logger`. Enable verbose logs with `RUST_LOG=myy_player=debug`.
+
+## Build from Source
+1. **Prepare the toolchain**
+   - Install Rust toolchain and FFmpeg as described above
+   - On Windows make sure `clang`/`lld` is available (via Visual Studio or standalone LLVM)
+   - On macOS/Linux install missing utilities such as `pkg-config`, `clang`, or `make` using your package manager
+2. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-org/myy_player.git
+   cd myy_player
+   ```
+3. **(Optional) sync submodules**
+   - Currently there are no git submodules; if added later, run `git submodule update --init --recursive`
+4. **Configure FFmpeg paths**
+   - Windows: ensure `FFMPEG_DIR` and `PATH` reference `C:\ffmpeg`
+   - Linux/macOS: verify commands like `pkg-config --libs libavcodec` work
+5. **Build & run (debug)**
+   ```bash
+   cargo run
+   ```
+   Enable verbose logs with `RUST_LOG=myy_player=debug cargo run`
+6. **Build release binaries**
+   ```bash
+   cargo build --release
+   ```
+   Artifacts are generated under `target/release/`
+7. **Install / deploy**
+   - Create a `dist/bin` directory and copy `myy_player(.exe)`
+   - Add FFmpeg runtime libraries (`.dll` on Windows, `.so/.dylib` on Linux/macOS)
+   - For portable builds, zip the `dist` folder; for installers, see the `cargo wix` section below
+8. **Feature flags**
+   - Hardware acceleration is enabled by default (`hwaccel` feature)
+   - Disable it via `cargo run --no-default-features`
+   - Target-specific accel: e.g. `cargo run --features hwaccel-dx11`
 
 ## Quick Start
 ```bash

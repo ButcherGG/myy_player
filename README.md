@@ -59,7 +59,7 @@ MYY Player 是一款采用 Rust 编写的跨平台视频播放器原型（MVP）
 | Windows 10/11 | ✅ 已验证 | 推荐 GPU 驱动支持 D3D11VA；通过 `cargo wix` 可生成 MSI 安装包 |
 | macOS 12+    | ✅ 已验证 | 依赖 VideoToolbox；建议使用 `brew` 安装 FFmpeg |
 | Linux (X11/Wayland) | ✅ 已验证 | 首选 VAAPI；需安装 FFmpeg 开发库和编译工具链 |
-| Android / HarmonyOS（核心库） | ⚠️ 实验性 | 可交叉编译核心播放引擎（无 UI），后续迭代将提供原生界面与输入控制 |
+| Android / HarmonyOS（核心库） | ✅ 已验证 | 可交叉编译核心播放引擎（无 UI），后续迭代将提供原生界面与输入控制 |
 | iOS / iPadOS（核心库） | ⚠️ 实验性 | 支持生成静态库供集成，暂无 egui UI，未来版本将补全移动端渲染层 |
 
 > ⚠️ 若使用硬件解码，请确保目标平台 GPU 与驱动满足要求（NVIDIA/AMD/Intel 均需正确安装）。
@@ -82,16 +82,39 @@ MYY Player 是一款采用 Rust 编写的跨平台视频播放器原型（MVP）
          libswresample-dev pkg-config clang
      ```
 3. **日志输出**：默认使用 `env_logger`，运行前可设置 `RUST_LOG=myy_player=info` 或 `=debug`。
-```powershell
-# 临时设置（当前会话）
-$env:FFMPEG_DIR = "C:\ffmpeg"
-$env:PATH += ";C:\ffmpeg\bin"
 
-# 永久设置（推荐）
-[System.Environment]::SetEnvironmentVariable("FFMPEG_DIR", "C:\ffmpeg", "User")
-$currentPath = [System.Environment]::GetEnvironmentVariable("PATH", "User")
-[System.Environment]::SetEnvironmentVariable("PATH", "$currentPath;C:\ffmpeg\bin", "User")
-```
+## 从源码编译安装
+1. **准备环境**
+   - 按照上一节安装 Rust 工具链与 FFmpeg 依赖
+   - Windows 需确保 `clang`/`lld` 已随 Visual Studio 或 LLVM 安装
+   - macOS/Linux 如提示缺少 `pkg-config` 或 `clang`，请使用包管理器补齐
+2. **获取源码**
+   ```bash
+   git clone https://github.com/your-org/myy_player.git
+   cd myy_player
+   ```
+3. **（可选）同步外部资源**
+   - 项目当前无 git submodule，如后续新增，请运行 `git submodule update --init --recursive`
+4. **配置 FFmpeg 路径**
+   - Windows：请确认 `FFMPEG_DIR` 与 `PATH` 已指向 `C:\ffmpeg`
+   - Linux/macOS：确保 `pkg-config --libs libavcodec` 等命令可用
+5. **编译调试版**
+   ```bash
+   cargo run
+   ```
+   若需要查看调试日志：`RUST_LOG=myy_player=debug cargo run`
+6. **编译发布版**
+   ```bash
+   cargo build --release
+   ```
+   产物位于 `target/release/`
+7. **安装/部署**
+   - 创建 `dist/bin` 并复制 `myy_player(.exe)`
+   - 将 FFmpeg 运行时库（Windows 下为 `.dll`，Linux/macOS 为 `.so/.dylib`）一并放入 `dist/bin`
+   - 如需便携版，可直接压缩 `dist` 目录；若需安装包，请参考后文 `cargo wix` 指南
+8. **功能开关**
+   - 默认启用 `hwaccel` 特性，如需禁用硬件解码：`cargo run --no-default-features`
+   - 针对特定平台启用硬件加速：`cargo run --features hwaccel-dx11` 等
 
 ## 快速开始
 ```bash
