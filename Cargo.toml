@@ -1,0 +1,95 @@
+[package]
+name = "myy_player"
+version = "0.1.0"
+edition = "2021"
+authors = ["qwerty <zhaojun0723@163.com>"]
+description = "播放器应用"
+
+[dependencies]
+# GUI 框架 - egui 生态 (使用最新版本)
+egui = "0.27"
+eframe = { version = "0.27", default-features = false, features = [
+    "default_fonts", # 包含默认字体
+    "glow",          # OpenGL 后端
+    "wgpu",          # wgpu 后端 (性能更好)
+] }
+
+# 核心依赖
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# 异步运行时
+tokio = { version = "1.35", features = ["full"] }
+
+# 视频解码 - FFmpeg
+ffmpeg-next = "6.1"
+
+# GPU 渲染 - eframe 会自动选择兼容的 wgpu 版本
+bytemuck = { version = "1.14", features = ["derive"] }
+
+# 音频输出
+cpal = "0.15"
+
+# 高性能并发
+parking_lot = "0.12"  # 高性能锁，替代 std::sync::Mutex
+crossbeam = "0.8"  # 高性能队列和通道
+crossbeam-channel = "0.5"  # 高性能通道
+
+# 文件对话框
+rfd = "0.12"
+
+# 图像处理（用于图标）
+image = "0.24"
+egui_extras = { version = "0.27", features = ["all_loaders"] }
+
+# 日志
+log = "0.4"
+env_logger = "0.11"
+
+# 错误处理
+anyhow = "1.0"
+thiserror = "1.0"
+
+# VS Code Codicons 图标（通过 resvg 渲染 SVG）
+resvg = "0.37"
+usvg = "0.37"
+tiny-skia = "0.11"
+
+# Windows 平台特定 API（用于设置标题栏颜色）
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.54", features = [
+    "Win32_Graphics_Dwm",
+    "Win32_Foundation",
+    "ApplicationModel_Core",
+    "Win32_System_Com",
+] }
+raw-window-handle = "0.6"
+winit = "0.29"
+
+[features]
+default = ["hwaccel"]
+
+# 硬件加速支持
+hwaccel = []
+hwaccel-dx11 = ["hwaccel"]          # Windows D3D11VA
+hwaccel-vaapi = ["hwaccel"]         # Linux VAAPI
+hwaccel-videotoolbox = ["hwaccel"]  # macOS VideoToolbox
+hwaccel-cuda = ["hwaccel"]          # NVIDIA CUDA
+hwaccel-qsv = ["hwaccel"]           # Intel Quick Sync
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"  # 减小二进制大小
+
+[profile.dev]
+opt-level = 1  # 开发时也启用基础优化，提升体验
+
+
+[package.metadata.wix]
+upgrade-guid = "qwerty001"
+path-guid = "qwerty001"
+license = "LICENSE.rtf"
+eula = "EULA.rtf"
+icon = "wix/icon.ico"

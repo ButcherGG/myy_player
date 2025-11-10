@@ -1,0 +1,36 @@
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+
+# Tauri
+/src-tauri/target/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Build
+/dist/
+/build/
+
+# Test files
+/test_videos/
+/test_data/
+
+# FFmpeg (if local)
+/ffmpeg/
+
+# Node modules (if using npm)
+node_modules/
+
