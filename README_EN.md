@@ -199,5 +199,48 @@ The binary is located at `target/release/myy_player` (`.exe` on Windows). Ship F
 
 > To build a runnable demo, reuse the playback core within an official Harmony template project; hardware acceleration availability depends on the target device and NDK capabilities.
 
+### Android / Android TV core library
+> Build the playback core as `.so` libraries for Android native apps (no egui UI bundle yet).
+
+1. **Install the Android NDK** (r26+ recommended)
+   - Use Android Studio or download from https://developer.android.com/ndk
+   - Example path: `D:\Android\ndk\26.1.10909125`
+2. **Set environment variables** (PowerShell example):
+   ```powershell
+   $env:ANDROID_NDK_HOME = "D:\Android\ndk\26.1.10909125"
+   $env:PATH += ";$env:ANDROID_NDK_HOME\toolchains\llvm\prebuilt\windows-x86_64\bin"
+   ```
+3. **Add Rust targets**:
+   ```powershell
+   rustup target add aarch64-linux-android
+   rustup target add armv7-linux-androideabi   # optional 32-bit
+   rustup target add x86_64-linux-android      # optional emulator build
+   ```
+4. **Configure `.cargo/config.toml`** (sample):
+   ```toml
+   [target.aarch64-linux-android]
+   linker = "aarch64-linux-android24-clang"
+   ar = "llvm-ar"
+   rustflags = [
+       "-Clink-arg=-Wl,--build-id",
+       "-Clink-arg=-lc",
+   ]
+   ```
+   > `aarch64-linux-android24-clang` is provided by the NDK; adjust the API level (21/24/29, etc.) based on your minSdk.
+5. **Cross-compile**:
+   ```powershell
+   cargo build --release --target aarch64-linux-android
+   ```
+   Outputs are located in `target/aarch64-linux-android/release/` and ready to be packaged as `.so` libraries.
+6. **Integrate into Android projects**:
+   - Place `libmyy_player.so` under `app/src/main/jniLibs/arm64-v8a/`
+   - Expose playback APIs via JNI or N-API
+   - Implement UI with Jetpack Compose/View/Flutter etc.
+   - For hardware decoding, bridge to Android `MediaCodec` or map to FFmpeg hardware modules supported on the device
+7. **Testing & debugging**:
+   - Use `adb push` to transfer sample media to devices
+   - Inspect logs with `adb logcat | grep myy_player` (logs include pid/tid)
+   - For profiling, build with `cargo build --release` and leverage Android Studio Profiler
+
 ## Logging & Troubleshooting
 - All major logs include `

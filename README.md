@@ -189,28 +189,48 @@ cargo build --release
 
 > 若需要生成可执行 Demo，可结合鸿蒙模板项目复用播放器核心逻辑；硬件解码支持取决于设备与 OpenHarmony NDK 能力。
 
+### Android / Android TV 核心库
+> 构建播放核心为 `.so` 静态库/动态库供 Android 原生应用调用，目前暂不包含 egui UI。
+
+1. **安装 Android NDK**（推荐 r26+）
+   - 使用 Android Studio 或直接从 https://developer.android.com/ndk 下载
+   - 假设解压路径为 `D:\Android\ndk\26.1.10909125`
+2. **配置环境变量**（PowerShell 示例）：
+   ```powershell
+   $env:ANDROID_NDK_HOME = "D:\Android\ndk\26.1.10909125"
+   $env:PATH += ";$env:ANDROID_NDK_HOME\toolchains\llvm\prebuilt\windows-x86_64\bin"
+   ```
+3. **安装 Rust 目标**：
+   ```powershell
+   rustup target add aarch64-linux-android
+   rustup target add armv7-linux-androideabi   # 若需要 32 位
+   rustup target add x86_64-linux-android      # 若需要模拟器
+   ```
+4. **生成 `.cargo/config.toml`**（示例）：
+   ```toml
+   [target.aarch64-linux-android]
+   linker = "aarch64-linux-android24-clang"
+   ar = "llvm-ar"
+   rustflags = [
+       "-Clink-arg=-Wl,--build-id",
+       "-Clink-arg=-lc",
+   ]
+   ```
+   > 上述 `aarch64-linux-android24-clang` 来自 NDK，数值 24 代表 API Level；根据需求选择 21/24/29 等。
+5. **交叉编译**：
+   ```powershell
+   cargo build --release --target aarch64-linux-android
+   ```
+   产物位于 `target/aarch64-linux-android/release/`，可打包成 `.so`。
+6. **集成到 Android 工程**：
+   - 将生成的 `libmyy_player.so` 置于 `app/src/main/jniLibs/arm64-v8a/`
+   - 使用 JNI/NdkMedia/NAPI 暴露播放控制接口
+   - UI 由 Jetpack Compose / View / Flutter 等负责
+   - 若需硬件解码，需在 JNI 层调用 Android MediaCodec 或映射到设备支持的 FFmpeg 硬件模块
+7. **测试与调试**：
+   - 使用 `adb push` 将测试媒体复制到设备
+   - 通过 `adb logcat | grep myy_player` 查看日志（默认包含 pid/tid）
+   - 如需 Profile，可启用 `cargo build --profile=release` 并结合 Android Studio Profiler
+
 ### 其他平台
-- macOS / Linux 可使用 `cargo-bundle`、`appimagetool` 等工具打包；当前阶段建议提供 Release 二进制 + 运行脚本。
-
-## 日志与排障
-- 所有核心线程日志包含 `[pid:xxx tid:yyy]` 前缀，配合时间戳方便定位多线程问题。
-- 网络流卡顿：关注 `DemuxerThread` 日志中 `Unable to read from socket`、`keepalive request failed` 等关键字，必要时调整 `FFmpeg` 输入参数（如 `timeout`、`rw_timeout`）。
-- Seek 失败：检查解码器日志是否出现大量 `EOF`，若出现可在配置中降低 Seek 频率或增加缓冲。
-
-## 路线图
-- [ ] GPU 零拷贝渲染（wgpu）
-- [ ] 多音频声道输出与混音
-- [ ] 播放列表与循环模式
-- [ ] 字幕渲染与外挂字幕解析
-- [ ] AV1/AVS3 等新一代编解码支持
-- [ ] 移动端原生界面（Android/HarmonyOS/iOS），完善触控与系统集成
-- [ ] 更多网络协议（SRT、WebRTC）
-- [ ] 云端播放记录与收藏同步
-
-## 贡献方式
-欢迎提交 Issue / Pull Request！建议在提交之前：
-1. 运行 `cargo fmt && cargo clippy && cargo test`（当前测试覆盖率有限）。
-2. 描述复现步骤与平台信息，便于维护者验证。
-
-## 许可证
-本项目采用 [MIT License](LICENSE)。
+- macOS / Linux 可使用 `
